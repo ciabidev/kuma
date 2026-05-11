@@ -73,7 +73,6 @@ module.exports = {
 	once: true,
 	execute(client) {
 		console.log(`Ready! Logged in as ${client.user.tag}`);
-		sendAutoMessage(client, autoMessages[0]);
 		for (const autoMessage of autoMessages) {
 			setInterval(
 				() => sendAutoMessage(client, autoMessage),
