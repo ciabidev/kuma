@@ -1,7 +1,7 @@
 const { ContainerBuilder, Events, MessageFlags } = require('discord.js');
 
 const sailorsLodgeReminder = `
-Anyone can host, no requirements!
+## Anyone can host, no requirements!
 -# If you would like to go further and be a Trusted host, see <#1443678567824097310>
 ### \`/party create\` - drop a lobby card so others can join the group (optional)
 ### \`/party lfg\` - Ping for your party when ready. Anyone can ping
