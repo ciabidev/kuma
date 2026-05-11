@@ -10,7 +10,7 @@ module.exports = {
 
     if (!channel) return;
     await channel.send(
-      `<@&${WELCOME_ROLE_ID}> ➡️ Welcome ${member} to Sunfish Village! Please check <#${VERIFY_CHANNEL_ID}> to gain access to the rest of the server`,
+      `<@&${WELCOME_ROLE_ID}> ➡️ Welcome ${member} to Sunfish Village! We heavily recommended you check out <#1478922526749888562> if its youre not familiar with beast hunting or parties. Please verify in <#${VERIFY_CHANNEL_ID}> to gain access to the rest of the server.`,
     );
   },
 };
