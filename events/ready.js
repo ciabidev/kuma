@@ -3,8 +3,9 @@ const { ContainerBuilder, Events, MessageFlags } = require('discord.js');
 const sailorsLodgeReminder = `
 ## ℹ️ for people hosting their own party
 ### \`/party create\` - drop a lobby card so others can join the group (optional)
-### \`/party lfg\` - Ping the Looking For Group role to gather members
+### \`/party lfg\` - Ping for your party when ready. Anyone can ping
 ### \`/help\` to see all commands!
+-# Wanna be a *Trusted* host? ➡️ <#1443678567824097310>
 `;
 
 const autoMessages = [
