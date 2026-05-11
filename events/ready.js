@@ -5,7 +5,8 @@ const sailorsLodgeReminder = `
 ### \`/party create\` - drop a lobby card so others can join the group (optional)
 ### \`/party lfg\` - Ping for your party when ready. Anyone can ping
 ### \`/help\` to see all commands!
--# Wanna be a *Trusted* host? ➡️ <#1443678567824097310>
+Anyone can host, no requirements!
+-# If you would like to go further and be a Trusted host, see <#1443678567824097310>
 `;
 
 const autoMessages = [
