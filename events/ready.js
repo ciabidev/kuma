@@ -1,7 +1,7 @@
 const { ContainerBuilder, Events, MessageFlags } = require('discord.js');
 
 const sailorsLodgeReminder = `
-## ℹ️ For people hosting their own party
+## ℹ️ for people hosting their own party
 ### \`/party create\` - drop a lobby card so others can join the group (optional)
 ### \`/party lfg\` - Ping the Looking For Group role to gather members
 ### \`/help\` to see all commands!
@@ -17,7 +17,7 @@ const autoMessages = [
       "1488338966385004635",
       "1478565020194443265",
     ],
-    intervalMinutes: 60,
+    intervalMinutes: 360,
     message: {
       components: [
         new ContainerBuilder()
