@@ -15,7 +15,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node deploy-commands && node index.js",
     "dev": "node deploy-commands && nodemon index.js"
   },
   "dependencies": {

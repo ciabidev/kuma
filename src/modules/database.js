@@ -156,6 +156,22 @@ async function setGuildChannel(guildId, setting, channelId) {
   return settings;
 }
 
+async function setGuildJoinRole(guildId, roleId) {
+  const key = String(guildId);
+  const { guildSettings } = await connectDatabase();
+  const update = roleId
+    ? { $set: { join_role_id: String(roleId) } }
+    : { $unset: { join_role_id: "" } };
+
+  const settings = await guildSettings.findOneAndUpdate(
+    { _id: key },
+    update,
+    { upsert: true, returnDocument: "after" }
+  );
+  settingsCache.set(key, settings);
+  return settings;
+}
+
 async function pingDatabase() {
   const { database } = await connectDatabase();
   await database.command({ ping: 1 });
@@ -177,6 +193,7 @@ module.exports = {
   getCases,
   getGuildSettings,
   setGuildChannel,
+  setGuildJoinRole,
   pingDatabase,
   closeDatabase,
 };
