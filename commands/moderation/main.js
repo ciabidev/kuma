@@ -12,7 +12,8 @@ module.exports = {
   data: (() => {
     const builder = new SlashCommandBuilder()
       .setName("moderation")
-      .setDescription("Moderation commands");
+      .setDescription("Moderation commands")
+      .setDMPermission(false);
 
     const dir = __dirname; // commands/moderation
     const files = fs.readdirSync(dir).filter((f) => f !== "main.js");

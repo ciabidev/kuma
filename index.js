@@ -5,11 +5,11 @@ const app = express();
 
 // This route just confirms the bot is online
 app.get("/", (req, res) => {
-  res.send("✅ Sunfish-Karoo is alive!");
+  res.send("✅ kuma is alive!");
 });
 
 // Render automatically assigns a port in process.env.PORT
-app.listen(process.env.PORT || 3000, () => {
+const server = app.listen(process.env.PORT || 3000, () => {
   console.log("🌐 Express keep-alive server running.");
 });
 
@@ -18,7 +18,7 @@ app.listen(process.env.PORT || 3000, () => {
 // Require the necessary discord.js classes
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
+const { Client, Collection, GatewayIntentBits } = require('discord.js');
 
 require('dotenv').config();
 
@@ -34,8 +34,6 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent, // REQUIRED for messageCreate
-    GatewayIntentBits.GuildMembers,
   ],
 });
 
@@ -101,4 +99,23 @@ for (const file of moduleFiles) {
   }
 }
 
-client.login(token);
+async function start() {
+  await client.modules.database.connectDatabase();
+  console.log("[DATABASE] Connected to MongoDB Atlas.");
+  await client.login(token);
+}
+
+async function shutdown() {
+  server.close();
+  client.destroy();
+  await client.modules.database.closeDatabase();
+}
+
+process.once("SIGINT", shutdown);
+process.once("SIGTERM", shutdown);
+
+start().catch((error) => {
+  console.error("Failed to start:", error);
+  process.exitCode = 1;
+  void shutdown();
+});

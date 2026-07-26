@@ -1,7 +1,7 @@
 const { PermissionsBitField, MessageFlags } = require("discord.js");
 
 // get points variable from moderation.js
-const { getUserPoints } = require("../../src/modules/supabase");
+const { getUserPoints } = require("../../src/modules/database");
 const { SlashCommandSubcommandBuilder } = require("discord.js");
 
 module.exports = {
@@ -45,7 +45,7 @@ module.exports = {
    
 
       // Get previous points or default to 0
-      let prevPoints = await getUserPoints(targetUser.id);
+      let prevPoints = await getUserPoints(interaction.guildId, targetUser.id);
 
       // Add new points to the user's total
       const addPoints = interaction.options.getInteger("add");

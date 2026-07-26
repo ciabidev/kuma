@@ -27,7 +27,7 @@ module.exports = {
       });
     }
     const targetUser = interaction.options.getUser("member");
-    const cases = await interaction.client.modules.supabase.getCases(targetUser.id);
+    const cases = await interaction.client.modules.database.getCases(interaction.guildId, targetUser.id);
     if (!cases.length) {
       return await interaction.reply({
         content: `<@${targetUser.id}> is sweet as pie`,
@@ -36,7 +36,10 @@ module.exports = {
       return;
     }
     const pages = interaction.client.modules.chunkArray(cases, 3);
-    const points = await interaction.client.modules.supabase.getUserPoints(targetUser.id);
+    const points = await interaction.client.modules.database.getUserPoints(
+      interaction.guildId,
+      targetUser.id
+    );
     let pageIndex = 0;
 
     function renderPage() {

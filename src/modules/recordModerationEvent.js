@@ -1,6 +1,6 @@
 const sendModerationDM = require("./sendModerationDM");
 const sendModerationMessage = require("./sendModerationMessage");
-const { createCase } = require("./supabase");
+const { createCase } = require("./database");
 
 module.exports = async function recordModerationEvent({
   targetUser,
@@ -14,7 +14,8 @@ module.exports = async function recordModerationEvent({
 }) {
   const points_delta = pointsDelta
 
-  await createCase({
+  const moderationCase = await createCase({
+    guild_id: interaction.guildId,
     target_user: targetUser.id,
     action,
     reason,
@@ -43,6 +44,7 @@ module.exports = async function recordModerationEvent({
     durationMs,
     interaction,
     pointsDelta,
+    caseId: moderationCase.id,
   });
   
 }

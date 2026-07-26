@@ -1,5 +1,5 @@
-# sunfish-karoo
-Utility bot for Sunfish Village discord server. Right now it only works for the Sunfish Village server.
+# kuma
+Discord moderation bot with isolated settings, cases, and point totals for every server.
 
 Its not public rn so you'll have to self host it:
 
@@ -12,21 +12,27 @@ Its not public rn so you'll have to self host it:
 2. Install the dependencies with `npm install`
     - make sure you have node installed (latest)
 
-## 2. configuring config.json
-1. Change the config.example.json file to your own values and rename it to config.json
+## 2. Configure environment variables
 
-### supabase
- create a supabase account and project. 
-- **Supabase URL:** go to Connect -> App Framework -> copy the url
-- **Supabase Service Key:** go to Project Settings -> API Keys -> New Secret Key -> Copy the key
-- run init.sql in your db (go to SQL Editor tab -> paste the code and run)
+Copy the variables from `.env.example` into your hosting provider's environment configuration.
+
+### MongoDB Atlas
+
+1. Create a free Atlas cluster and a database user.
+2. Add your hosting provider's outbound IP to Atlas Network Access. For local development, add your current IP.
+3. In Atlas, select Connect -> Drivers -> Node.js and copy the connection string.
+4. Set `MONGODB_URI` to that connection string and replace its username and password placeholders.
+The bot uses separate `development` and `production` databases according to `DEV_MODE`. It creates its collections and indexes automatically.
+
+Moderation cases created by an older single-server version do not have a `guild_id` and are intentionally hidden to prevent cross-server data leaks. Add the original server's ID to those documents in Atlas if you want to retain them.
+
 ### discord
 create a testing bot and a main bot in https://discord.com/developers/applications.
-1. enable the intents for guild messages, guild members, and message content ("Bot" tab)
-2. go to Installation tab -> set to use Discord Provided Link -> enable all permissions and invite to ur server
+1. No privileged gateway intents are required.
+2. In the Installation tab, enable the `bot` and `applications.commands` scopes and grant the moderation permissions you intend to use.
 3. go to your discord settings and enable developer mode
 
-- **guildId:** right click on ur server name -> Copy Server ID
+- **guildId:** optional development server ID. Development commands deploy there immediately; production commands deploy globally to every server that installs the bot.
 
 (You dont need to reset token if you already know it)
 - **productionToken:** go to your main bot -> "Bot" -> Reset Token -> click "Copy"
@@ -34,6 +40,17 @@ create a testing bot and a main bot in https://discord.com/developers/applicatio
 
 - **productionClientId:** go to your main bot -> General Information -> copy Application ID
 - **devClientId:** same as above but for testing bot
+
+### Per-server configuration
+
+Members with Manage Server permission can configure channels independently in each server:
+
+- `/config set-channel purpose:Moderation logs` sends a copy of moderation actions to that channel.
+- `/config set-channel purpose:Spam-bot whirlpool` deletes messages in that channel and bans their authors.
+- `/config clear-channel` disables either feature.
+- `/config view` shows the current server's settings.
+
+The whirlpool is disabled by default. Only enable it in a dedicated trap channel.
 
 ## 3. Deploying
 - cloudflare and vercel will not work with this, you'll have to use something like Render or Koyeb etc. 
@@ -44,39 +61,33 @@ Do not have multiple web services under a single workspace or you'll hit usage l
 1. create a new workspace
 2. create a web service and import from your cloned github repo
 3. set build command to `npm install` and start command to `npm run dev`
-4. scroll all the way to the bottom and add the config.json as a secret file
+4. scroll to the environment section and add the required variables
 5. deploy
 
 
 ### for other services
 Haven't had much experience with others so here's a general guide:
 1. import from github
-2. add config.json as a secret file
+2. add the required environment variables
 3. set build command to `npm install` and start command to `npm run dev`
 4. deploy
 ## Development
-You may need to change channel ids and role ids in helpers.js and messageCreate.js
 run `node deploy-commands.js` in the same directory as your bot's source code.
 
 # Commands
 
 ## Moderation
 
-- ban
+- cases
 - kick
-- mute
 - removepoints
 - removetimeout
 - punish
 - unban
-- unmute
 
 ## Utility
 
-- closepost
-- helpers
-- ping
-- reopenpost
+- purge
 
 ## System
 

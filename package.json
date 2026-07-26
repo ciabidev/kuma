@@ -1,14 +1,14 @@
 {
-  "name": "sunfish-karoo",
+  "name": "kuma",
   "version": "1.0.0",
-  "description": "Helper bot for Sunfish Village",
-  "homepage": "https://github.com/ciabidev/sunfish-karoo#readme",
+  "description": "Multi-server Discord moderation bot",
+  "homepage": "https://github.com/ciabidev/kuma#readme",
   "bugs": {
-    "url": "https://github.com/ciabidev/sunfish-karoo/issues"
+    "url": "https://github.com/ciabidev/kuma/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ciabidev/sunfish-karoo.git"
+    "url": "git+https://github.com/ciabidev/kuma.git"
   },
   "license": "MIT",
   "author": "github.com/ciabidev",
@@ -19,16 +19,15 @@
     "dev": "node deploy-commands && nodemon index.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.84.0",
     "discord.js": "^14.24.2",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "mongoose": "^9.1.1"
+    "mongodb": "^7.4.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.19.0"
   }
 }

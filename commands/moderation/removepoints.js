@@ -55,7 +55,10 @@ module.exports = {
       }
       
       // Get previous points or default to 0
-      let prevPoints = await interaction.client.modules.supabase.getUserPoints(targetUser.id);
+      let prevPoints = await interaction.client.modules.database.getUserPoints(
+        interaction.guildId,
+        targetUser.id
+      );
       if (prevPoints === undefined) prevPoints = 0;
 
       // Subtract points from user's total

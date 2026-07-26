@@ -1,17 +1,24 @@
-const { Events, MessageFlags } = require("discord.js");
+const { Events } = require("discord.js");
 
 module.exports = {
   name: Events.MessageCreate,
   async execute(message) {
-    const channel = message.channel;
-    const WHIRLPOOL_CHANNEL_ID = "1435802233655656549"; // replace with your actual 
-    if (channel.id === WHIRLPOOL_CHANNEL_ID) {
+    if (!message.guild || message.author.bot) return;
+
+    let settings;
+    try {
+      settings = await message.client.modules.database.getGuildSettings(message.guild.id);
+    } catch (error) {
+      console.error("Failed to load guild settings:", error);
+      return;
+    }
+    if (message.channel.id === settings.whirlpool_channel_id) {
       await message.delete();
 
       try {
         await message.guild.members.ban(message.author.id, {
           reason: "Spam bot detected",
-          days: 1000000000,
+          deleteMessageSeconds: 604800,
         });
       } catch (err) {
         console.error(
