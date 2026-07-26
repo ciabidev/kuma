@@ -58,6 +58,13 @@ module.exports = {
     ),
 
   async execute(interaction) {
+
+    if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageGuild)) {
+      return interaction.reply({
+        content: "You need Manage Server permission to configure the bot.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
     const subcommand = interaction.options.getSubcommand(true);
     const database = interaction.client.modules.database;
 
@@ -87,8 +94,10 @@ module.exports = {
       });
     }
 
-    const channel = interaction.options.getChannel("channel", true);
-    await database.setGuildChannel(interaction.guildId, setting, channel.id);
+    if (subcommand === "set-channel") {
+      const channel = interaction.options.getChannel("channel", true);
+      await database.setGuildChannel(interaction.guildId, setting, channel.id);
+    }
     return interaction.reply({
       content: `${purpose === "modlogs" ? "Moderation logs" : "Spam-bot whirlpool"} set to ${channel}.`,
       flags: MessageFlags.Ephemeral,
