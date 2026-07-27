@@ -97,10 +97,11 @@ module.exports = {
     if (subcommand === "set-channel") {
       const channel = interaction.options.getChannel("channel", true);
       await database.setGuildChannel(interaction.guildId, setting, channel.id);
+      return interaction.reply({
+        content: `${purpose === "modlogs" ? "Moderation logs" : "Spam-bot whirlpool"} set to ${channel}.`,
+        flags: MessageFlags.Ephemeral,
+      });
     }
-    return interaction.reply({
-      content: `${purpose === "modlogs" ? "Moderation logs" : "Spam-bot whirlpool"} set to ${channel}.`,
-      flags: MessageFlags.Ephemeral,
-    });
+    
   },
 };
