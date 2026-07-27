@@ -5,6 +5,35 @@ module.exports = {
   async execute(interaction) {
     const client = interaction.client;
 
+    if (interaction.isAutocomplete()) {
+      const command = client.commands.get(interaction.commandName);
+      if (!command?.autocomplete) return;
+      try {
+        await command.autocomplete(interaction);
+      } catch (error) {
+        console.error("Failed to provide autocomplete choices:", error);
+      }
+      return;
+    }
+
+    if (interaction.isModalSubmit() && interaction.customId.startsWith("sticky:")) {
+      try {
+        await client.modules.stickyInteractions.handleModal(interaction);
+      } catch (error) {
+        await replyWithError(interaction, error);
+      }
+      return;
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith("sticky:")) {
+      try {
+        await client.modules.stickyInteractions.handleButton(interaction);
+      } catch (error) {
+        await replyWithError(interaction, error);
+      }
+      return;
+    }
+
     if (interaction.isChatInputCommand()) {
       if (!interaction.inGuild()) {
         await interaction.reply({
@@ -24,26 +53,25 @@ module.exports = {
       try {
         await command.execute(interaction);
       } catch (error) {
-        console.error(error);
-        let content = error.message;
-        if (error.stack) {
-          content += `\n\n${error.stack}`;
-        }
-
-        if (error.code === 50001) {
-          content = "I don't have access to this channel, or I can't send messages to this user.";
-        }
-      
-          const replyContent = {
-            content: `An error occurred while executing this command, please report this to us via our [issue board](https://github.com/ciabidev/kuma/issues)\n\`\`\`${content}\`\`\``,
-            flags: [MessageFlags.Ephemeral],
-          };
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp(replyContent);
-        } else {
-          await interaction.reply(replyContent);
-        }
+        await replyWithError(interaction, error);
       }
     }
   },
 };
+
+async function replyWithError(interaction, error) {
+  console.error(error);
+  let content = error.message;
+  if (error.code === 50001) {
+    content = "I don't have access to that channel.";
+  }
+  const replyContent = {
+    content: `An error occurred: ${content}`,
+    flags: MessageFlags.Ephemeral,
+  };
+  if (interaction.replied || interaction.deferred) {
+    await interaction.followUp(replyContent);
+  } else {
+    await interaction.reply(replyContent);
+  }
+}

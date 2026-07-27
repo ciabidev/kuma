@@ -3,7 +3,13 @@ const { Events } = require("discord.js");
 module.exports = {
   name: Events.MessageCreate,
   async execute(message) {
-    if (!message.guild || message.author.bot) return;
+    if (!message.guild || message.author.id === message.client.user.id) return;
+
+    try {
+      await message.client.modules.stickyMessages.handleMessage(message);
+    } catch (error) {
+      console.error("Failed to process sticky messages:", error);
+    }
 
     let settings;
     try {
