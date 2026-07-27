@@ -139,7 +139,7 @@ function schedule(client, sticky, delay) {
 }
 
 async function handleMessage(message) {
-	if (!message.guild || message.author.bot) return;
+	if (!message.guild || (message.author.bot && !message.webhookId)) return;
 	const stickies = await message.client.modules.database.getStickyMessages(
 		message.guild.id,
 		message.channel.id,
