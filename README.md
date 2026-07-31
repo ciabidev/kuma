@@ -16,30 +16,29 @@ Its not public rn so you'll have to self host it:
 
 Copy the variables from `.env.example` into your hosting provider's environment configuration.
 
+- `ENVIRONMENT`: `development` or `production`; this is also the MongoDB database name.
+- `DISCORD_TOKEN`: the token for the bot used by this deployment.
+- `DEV_IDS`: comma-separated Discord user IDs allowed to run developer-only commands.
+- `MONGO_URI`: your MongoDB Atlas connection string.
+- `ISSUES`: optional URL shown when a command fails so users can report the problem.
+
 ### MongoDB Atlas
 
 1. Create a free Atlas cluster and a database user.
 2. Add your hosting provider's outbound IP to Atlas Network Access. For local development, add your current IP.
 3. In Atlas, select Connect -> Drivers -> Node.js and copy the connection string.
-4. Set `MONGODB_URI` to that connection string and replace its username and password placeholders.
-The bot uses separate `development` and `production` databases according to `DEV_MODE`. It creates its collections and indexes automatically.
+4. Set `MONGO_URI` to that connection string and replace its username and password placeholders.
+The bot uses the database named by `ENVIRONMENT` and creates its collections and indexes automatically.
 
 Moderation cases created by an older single-server version do not have a `guild_id` and are intentionally hidden to prevent cross-server data leaks. Add the original server's ID to those documents in Atlas if you want to retain them.
 
 ### discord
-create a testing bot and a main bot in https://discord.com/developers/applications.
-1. No privileged gateway intents are required.
+Create a bot in https://discord.com/developers/applications.
+1. On the Bot page, enable the Server Members and Message Content privileged gateway intents.
 2. In the Installation tab, enable the `bot` and `applications.commands` scopes and grant the moderation permissions you intend to use.
 3. go to your discord settings and enable developer mode
 
-- **guildId:** optional development server ID. Development commands deploy there immediately; production commands deploy globally to every server that installs the bot.
-
-(You dont need to reset token if you already know it)
-- **productionToken:** go to your main bot -> "Bot" -> Reset Token -> click "Copy"
-- **devToken:** same as above but for testing bot
-
-- **productionClientId:** go to your main bot -> General Information -> copy Application ID
-- **devClientId:** same as above but for testing bot
+Set `DISCORD_TOKEN` to the token from the bot's Bot page. The application ID is read from the logged-in bot session, and commands are deployed globally to every server that installs the bot.
 
 ### Per-server configuration
 
@@ -60,7 +59,7 @@ render is free i found a funny loophole
 Do not have multiple web services under a single workspace or you'll hit usage limit fast
 1. create a new workspace
 2. create a web service and import from your cloned github repo
-3. set build command to `npm install` and start command to `npm run dev`
+3. set build command to `npm install` and start command to `npm start`
 4. scroll to the environment section and add the required variables
 5. deploy
 
@@ -69,10 +68,10 @@ Do not have multiple web services under a single workspace or you'll hit usage l
 Haven't had much experience with others so here's a general guide:
 1. import from github
 2. add the required environment variables
-3. set build command to `npm install` and start command to `npm run dev`
+3. set build command to `npm install` and start command to `npm start`
 4. deploy
 ## Development
-run `node deploy-commands.js` in the same directory as your bot's source code.
+Run `npm run dev`. Commands are deployed globally whenever the bot starts.
 
 # Commands
 

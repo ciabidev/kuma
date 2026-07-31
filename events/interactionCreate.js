@@ -1,4 +1,5 @@
 const { Events, MessageFlags } = require("discord.js");
+const { issuesUrl } = require("#config");
 
 module.exports = {
   name: Events.InteractionCreate,
@@ -65,8 +66,9 @@ async function replyWithError(interaction, error) {
   if (error.code === 50001) {
     content = "I don't have access to that channel.";
   }
+  const issuePrompt = issuesUrl ? `\nReport persistent issues here: ${issuesUrl}` : "";
   const replyContent = {
-    content: `An error occurred: ${content}`,
+    content: `An error occurred: ${content}${issuePrompt}`,
     flags: MessageFlags.Ephemeral,
   };
   if (interaction.replied || interaction.deferred) {

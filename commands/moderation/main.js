@@ -6,7 +6,6 @@ const {
 } = require("discord.js");
 
 const fs = require("node:fs");
-const path = require("node:path");
 
 module.exports = {
   data: (() => {
@@ -16,10 +15,10 @@ module.exports = {
       .setDMPermission(false);
 
     const dir = __dirname; // commands/moderation
-    const files = fs.readdirSync(dir).filter((f) => f !== "main.js");
+    const files = fs.readdirSync(dir).filter((file) => file.endsWith(".js") && file !== "main.js");
 
     for (const file of files) {
-      const sub = require(path.join(dir, file));
+      const sub = require(`#commands/moderation/${file.slice(0, -3)}`);
       builder.addSubcommand(() => sub.data);
     }
 
@@ -28,7 +27,7 @@ module.exports = {
 
   async execute(interaction) {
     const name = interaction.options.getSubcommand(true);
-    const handler = require(path.join(__dirname, `${name}.js`));
+    const handler = require(`#commands/moderation/${name}`);
     return handler.execute(interaction);
   },
 };

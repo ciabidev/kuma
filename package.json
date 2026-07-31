@@ -15,14 +15,20 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "node deploy-commands && node index.js",
-    "dev": "node deploy-commands && nodemon index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "discord.js": "^14.24.2",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "mongodb": "^7.4.0"
+  },
+  "imports": {
+    "#commands/*": "./commands/*.js",
+    "#config": "./src/config.js",
+    "#events/*": "./events/*.js",
+    "#modules/*": "./src/modules/*.js"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

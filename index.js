@@ -22,12 +22,7 @@ const { Client, Collection, GatewayIntentBits } = require('discord.js');
 
 require('dotenv').config();
 
-const devMode = process.env.DEV_MODE === "true";
-const devToken = process.env.DEV_TOKEN;
-const productionToken = process.env.PRODUCTION_TOKEN;
-
-
-const token = devMode === true ? devToken : productionToken;
+const { discordToken } = require('#config');
 
 // Create a new client instance
 const client = new Client({
@@ -48,15 +43,15 @@ for (const folder of commandFolders) {
 	const commandsPath = path.join(foldersPath, folder);
 	const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
 	for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    command.__path = filePath; // this is needed for reloading commands
+    const commandImport = `#commands/${folder}/${file.slice(0, -3)}`;
+    const command = require(commandImport);
+    command.__import = commandImport; // this is needed for reloading commands
     // Set a new item in the Collection with the key as the command name and the value as the exported module
     if ("data" in command && "execute" in command) {
       client.commands.set(command.data.name, command);
     } else {
       console.log(
-        `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
+        `[WARNING] ${commandImport} is missing a required "data" or "execute" property.`
       );
     }
   }
@@ -67,8 +62,7 @@ for (const folder of commandFolders) {
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith('.js'));
 for (const file of eventFiles) {
-	const filePath = path.join(eventsPath, file);
-	const event = require(filePath);
+	const event = require(`#events/${file.slice(0, -3)}`);
 	if (event.once) { 
 		client.once(event.name, (...args) => event.execute(...args));
 	} else {
@@ -82,10 +76,8 @@ const moduleFiles = fs.readdirSync(modulesPath).filter((file) => file.endsWith("
 client.modules = {};
 
 for (const file of moduleFiles) {
-  const filePath = path.join(modulesPath, file);
-
   try {
-    const imported = require(filePath);
+    const imported = require(`#modules/${file.slice(0, -3)}`);
     const name = file.replace(".js", "");
 
     if (typeof imported === "function" && imported.length === 0) {
@@ -104,7 +96,7 @@ for (const file of moduleFiles) {
 async function start() {
   await client.modules.database.connectDatabase();
   console.log("[DATABASE] Connected to MongoDB Atlas.");
-  await client.login(token);
+  await client.login(discordToken);
 }
 
 async function shutdown() {

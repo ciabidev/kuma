@@ -1,7 +1,7 @@
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const { environment, mongoUri } = require("#config");
 
-const uri = process.env.MONGODB_URI;
-const databaseName = process.env.DEV_MODE === "true" ? "development" : "production";
+const databaseName = environment;
 
 let client;
 let connectionPromise;
@@ -16,12 +16,8 @@ async function dropLegacyIndex(collection, name) {
 }
 
 async function connectDatabase() {
-  if (!uri) {
-    throw new Error("MONGODB_URI is required");
-  }
-
   if (!connectionPromise) {
-    client = new MongoClient(uri, {
+    client = new MongoClient(mongoUri, {
       serverApi: {
         version: ServerApiVersion.v1,
         strict: true,

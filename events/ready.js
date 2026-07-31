@@ -4,6 +4,16 @@ module.exports = {
 	name: Events.ClientReady,
 	once: true,
 	async execute(client) {
+		try {
+			const commands = await client.application.commands.set(
+				client.commands.map((command) => command.data.toJSON()),
+			);
+			console.log(`Deployed ${commands.size} global application (/) commands.`);
+		}
+		catch (error) {
+			console.error('Failed to deploy global application commands:', error);
+		}
+
 		const updateStatus = async () => {
 			const guilds = await Promise.all(client.guilds.cache.map((guild) =>
 				client.guilds.fetch({ guild: guild.id, withCounts: true }),

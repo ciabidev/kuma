@@ -1,7 +1,7 @@
 // send a moderation message embed to the channel the command was used in
 
 const { ContainerBuilder, MessageFlags } = require("discord.js");
-const { getGuildSettings } = require("./database");
+const { getGuildSettings } = require("#modules/database");
 
 module.exports = async function sendModerationMessage({
   targetUser, // user object
