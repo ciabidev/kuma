@@ -4,19 +4,12 @@ const { environment, mongoUri } = require("#config");
 const databaseName = environment;
 
 let client;
-let connectionPromise;
+let db;
+let initPromise;
 const settingsCache = new Map();
 
-async function dropLegacyIndex(collection, name) {
-  try {
-    await collection.dropIndex(name);
-  } catch (error) {
-    if (!["IndexNotFound", "NamespaceNotFound"].includes(error.codeName)) throw error;
-  }
-}
-
-async function connectDatabase() {
-  if (!connectionPromise) {
+async function initDatabase() {
+  if (!initPromise) {
     client = new MongoClient(mongoUri, {
       serverApi: {
         version: ServerApiVersion.v1,
@@ -25,20 +18,12 @@ async function connectDatabase() {
       },
     });
 
-    connectionPromise = (async () => {
+    initPromise = (async () => {
       await client.connect();
+      db = client.db(databaseName);
 
-      const database = client.db(databaseName);
-      const cases = database.collection("moderation_cases");
-      const counters = database.collection("counters");
-      const guildSettings = database.collection("guild_settings");
-      const stickyMessages = database.collection("sticky_messages");
-
-      // The previous single-server schema used a globally unique case ID.
-      await Promise.all([
-        dropLegacyIndex(cases, "id_1"),
-        dropLegacyIndex(cases, "target_user_1_id_-1"),
-      ]);
+      const cases = db.collection("moderation_cases");
+      const stickyMessages = db.collection("sticky_messages");
 
       await Promise.all([
         cases.createIndex({ guild_id: 1, id: 1 }, { unique: true }),
@@ -48,20 +33,28 @@ async function connectDatabase() {
         stickyMessages.createIndex({ guild_id: 1, sync_source_id: 1 }),
       ]);
 
-      return { database, cases, counters, guildSettings, stickyMessages };
+      return db;
     })().catch(async (error) => {
       await client.close();
       client = undefined;
-      connectionPromise = undefined;
+      db = undefined;
+      initPromise = undefined;
       throw error;
     });
   }
 
-  return connectionPromise;
+  return initPromise;
+}
+
+function getCollection(collectionName) {
+  if (!db) {
+    throw new Error(`Database has not finished initializing before accessing ${collectionName}`);
+  }
+  return db.collection(collectionName);
 }
 
 async function getUserPoints(guildId, userId) {
-  const { cases } = await connectDatabase();
+  const cases = db.collection("moderation_cases");
   const [result] = await cases
     .aggregate([
       {
@@ -81,7 +74,8 @@ async function getUserPoints(guildId, userId) {
 async function createCase(entry) {
   if (!entry.guild_id) throw new Error("guild_id is required when creating a moderation case");
 
-  const { cases, counters } = await connectDatabase();
+  const cases = db.collection("moderation_cases");
+  const counters = db.collection("counters");
   const guildId = String(entry.guild_id);
   const counterId = `moderation_cases:${guildId}`;
   const latestCase = await cases.findOne(
@@ -115,7 +109,7 @@ async function createCase(entry) {
 }
 
 async function getCases(guildId, userId) {
-  const { cases } = await connectDatabase();
+  const cases = db.collection("moderation_cases");
   return cases
     .find(
       { guild_id: String(guildId), target_user: String(userId) },
@@ -129,7 +123,7 @@ async function getGuildSettings(guildId) {
   const key = String(guildId);
   if (settingsCache.has(key)) return settingsCache.get(key);
 
-  const { guildSettings } = await connectDatabase();
+  const guildSettings = db.collection("guild_settings");
   const settings = (await guildSettings.findOne({ _id: key })) || { _id: key };
   settingsCache.set(key, settings);
   return settings;
@@ -142,7 +136,7 @@ async function setGuildChannel(guildId, setting, channelId) {
   }
 
   const key = String(guildId);
-  const { guildSettings } = await connectDatabase();
+  const guildSettings = db.collection("guild_settings");
   const update = channelId
     ? { $set: { [setting]: String(channelId) } }
     : { $unset: { [setting]: "" } };
@@ -158,7 +152,7 @@ async function setGuildChannel(guildId, setting, channelId) {
 
 async function setGuildJoinRole(guildId, roleId) {
   const key = String(guildId);
-  const { guildSettings } = await connectDatabase();
+  const guildSettings = db.collection("guild_settings");
   const update = roleId
     ? { $set: { join_role_id: String(roleId) } }
     : { $unset: { join_role_id: "" } };
@@ -173,8 +167,7 @@ async function setGuildJoinRole(guildId, roleId) {
 }
 
 async function pingDatabase() {
-  const { database } = await connectDatabase();
-  await database.command({ ping: 1 });
+  await db.command({ ping: 1 });
 }
 
 async function getNextStickyId(counters, stickyMessages, guildId) {
@@ -197,7 +190,8 @@ async function getNextStickyId(counters, stickyMessages, guildId) {
 }
 
 async function createStickyMessage(entry) {
-  const { counters, stickyMessages } = await connectDatabase();
+  const counters = db.collection("counters");
+  const stickyMessages = db.collection("sticky_messages");
   const guildId = String(entry.guild_id);
   const channelId = String(entry.channel_id);
   const id = await getNextStickyId(counters, stickyMessages, guildId);
@@ -222,7 +216,8 @@ async function createStickyMessage(entry) {
 }
 
 async function createStickyTemplate(entry) {
-  const { counters, stickyMessages } = await connectDatabase();
+  const counters = db.collection("counters");
+  const stickyMessages = db.collection("sticky_messages");
   const guildId = String(entry.guild_id);
   const id = await getNextStickyId(counters, stickyMessages, guildId);
   const template = {
@@ -239,7 +234,7 @@ async function createStickyTemplate(entry) {
 }
 
 async function getStickyMessage(guildId, id) {
-  const { stickyMessages } = await connectDatabase();
+  const stickyMessages = db.collection("sticky_messages");
   return stickyMessages.findOne(
     { guild_id: String(guildId), id: Number(id) },
     { projection: { _id: 0 } }
@@ -247,7 +242,7 @@ async function getStickyMessage(guildId, id) {
 }
 
 async function getStickyMessages(guildId, channelId = null) {
-  const { stickyMessages } = await connectDatabase();
+  const stickyMessages = db.collection("sticky_messages");
   const query = { guild_id: String(guildId), type: { $ne: "template" } };
   if (channelId) query.channel_id = String(channelId);
   return stickyMessages.find(query, { projection: { _id: 0 } })
@@ -256,7 +251,7 @@ async function getStickyMessages(guildId, channelId = null) {
 }
 
 async function getStickyTemplates(guildId) {
-  const { stickyMessages } = await connectDatabase();
+  const stickyMessages = db.collection("sticky_messages");
   return stickyMessages.find(
     { guild_id: String(guildId), type: "template" },
     { projection: { _id: 0 } }
@@ -264,7 +259,7 @@ async function getStickyTemplates(guildId) {
 }
 
 async function updateStickyMessage(guildId, id, update) {
-  const { stickyMessages } = await connectDatabase();
+  const stickyMessages = db.collection("sticky_messages");
   const allowed = [
     "channel_id",
     "conversation_delay_ms",
@@ -289,7 +284,7 @@ async function updateStickyMessage(guildId, id, update) {
 }
 
 async function syncStickyClones(guildId, sourceId, payload) {
-  const { stickyMessages } = await connectDatabase();
+  const stickyMessages = db.collection("sticky_messages");
   const query = {
     guild_id: String(guildId),
     sync_source_id: Number(sourceId),
@@ -304,7 +299,7 @@ async function syncStickyClones(guildId, sourceId, payload) {
 }
 
 async function stopStickySync(guildId, id) {
-  const { stickyMessages } = await connectDatabase();
+  const stickyMessages = db.collection("sticky_messages");
   return stickyMessages.findOneAndUpdate(
     { guild_id: String(guildId), id: Number(id) },
     {
@@ -316,7 +311,7 @@ async function stopStickySync(guildId, id) {
 }
 
 async function setStickyDiscordMessage(guildId, id, channelId, messageId) {
-  const { stickyMessages } = await connectDatabase();
+  const stickyMessages = db.collection("sticky_messages");
   return stickyMessages.findOneAndUpdate(
     {
       guild_id: String(guildId),
@@ -329,7 +324,7 @@ async function setStickyDiscordMessage(guildId, id, channelId, messageId) {
 }
 
 async function deleteStickyMessage(guildId, id) {
-  const { stickyMessages } = await connectDatabase();
+  const stickyMessages = db.collection("sticky_messages");
   const deleted = await stickyMessages.findOneAndDelete(
     { guild_id: String(guildId), id: Number(id) },
     { projection: { _id: 0 } }
@@ -347,7 +342,7 @@ async function deleteStickyMessage(guildId, id) {
 }
 
 async function reorderStickyMessages(guildId, channelId, orderedIds) {
-  const { stickyMessages } = await connectDatabase();
+  const stickyMessages = db.collection("sticky_messages");
   if (orderedIds.length === 0) return;
   await stickyMessages.bulkWrite(orderedIds.map((id, index) => ({
     updateOne: {
@@ -362,16 +357,18 @@ async function reorderStickyMessages(guildId, channelId, orderedIds) {
 }
 
 async function closeDatabase() {
-  if (connectionPromise) {
+  if (initPromise) {
     await client.close();
     client = undefined;
-    connectionPromise = undefined;
+    db = undefined;
+    initPromise = undefined;
     settingsCache.clear();
   }
 }
 
 module.exports = {
-  connectDatabase,
+  initDatabase,
+  getCollection,
   getUserPoints,
   createCase,
   getCases,

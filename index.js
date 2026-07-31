@@ -95,7 +95,7 @@ for (const file of moduleFiles) {
 }
 
 async function start() {
-  await client.modules.database.connectDatabase();
+  await client.modules.database.initDatabase();
   console.log("[DATABASE] Connected to MongoDB Atlas.");
   await client.login(discordToken);
 }
