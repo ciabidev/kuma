@@ -66,11 +66,15 @@ For local development, copy `.env.example` to `.env`. On a hosting platform, add
 
 Enable Developer Mode under Discord **User Settings** → **Advanced**, then use **Copy User ID** to obtain values for `DEV_IDS`.
 
-### 5. Start the bot
+### 5. Host Kuma on your own machine
+
+After completing the steps above, start Kuma from the project directory:
 
 ```sh
 npm start
 ```
+
+This works on Windows, macOS, and Linux. When running Kuma this way, keep the terminal open, the computer awake, and its internet connection active for as long as you want the bot online. Kuma only makes outbound connections to Discord and MongoDB, so you do not need to forward a router port or expose the health endpoint to the internet.
 
 For local development with automatic restarts:
 
@@ -79,6 +83,16 @@ npm run dev
 ```
 
 Successful startup logs show the MongoDB connection, Discord login, and global command deployment. The health endpoint is available at `http://localhost:3000/` unless `PORT` is set.
+
+For an always-on installation, use [PM2](https://pm2.keymetrics.io/):
+
+```sh
+npm install --global pm2
+pm2 start index.js --name kuma
+pm2 save
+```
+
+PM2 keeps Kuma running after you close the terminal and restarts it if it crashes. Use `pm2 logs kuma` to view its logs and `pm2 restart kuma` after updating the bot.
 
 ## Deploying on Render
 
