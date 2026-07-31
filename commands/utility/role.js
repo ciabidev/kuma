@@ -173,7 +173,7 @@ module.exports = {
 		if (subcommand === 'joinrole') {
 			const remove = interaction.options.getBoolean('remove') ?? false;
 			if (remove) {
-				await interaction.client.modules.database.setGuildJoinRole(interaction.guildId, null);
+				await interaction.client.modules.db.setGuildJoinRole(interaction.guildId, null);
 				await interaction.reply({
 					content: 'The join role has been removed.',
 					flags: MessageFlags.Ephemeral,
@@ -196,7 +196,7 @@ module.exports = {
 				return;
 			}
 
-			await interaction.client.modules.database.setGuildJoinRole(interaction.guildId, role.id);
+			await interaction.client.modules.db.setGuildJoinRole(interaction.guildId, role.id);
 			await interaction.reply({
 				content: `New members will receive ${role}.`,
 				flags: MessageFlags.Ephemeral,

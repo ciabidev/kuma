@@ -66,10 +66,10 @@ module.exports = {
       });
     }
     const subcommand = interaction.options.getSubcommand(true);
-    const database = interaction.client.modules.database;
+    const db = interaction.client.modules.db;
 
     if (subcommand === "view") {
-      const settings = await database.getGuildSettings(interaction.guildId);
+      const settings = await db.getGuildSettings(interaction.guildId);
       const modlogs = settings.modlogs_channel_id
         ? `<#${settings.modlogs_channel_id}>`
         : "Not configured";
@@ -87,7 +87,7 @@ module.exports = {
     const setting = channelSettings[purpose];
 
     if (subcommand === "clear-channel") {
-      await database.setGuildChannel(interaction.guildId, setting, null);
+      await db.setGuildChannel(interaction.guildId, setting, null);
       return interaction.reply({
         content: `${purpose === "modlogs" ? "Moderation logs" : "Spam-bot whirlpool"} disabled.`,
         flags: MessageFlags.Ephemeral,
@@ -96,7 +96,7 @@ module.exports = {
 
     if (subcommand === "set-channel") {
       const channel = interaction.options.getChannel("channel", true);
-      await database.setGuildChannel(interaction.guildId, setting, channel.id);
+      await db.setGuildChannel(interaction.guildId, setting, channel.id);
       return interaction.reply({
         content: `${purpose === "modlogs" ? "Moderation logs" : "Spam-bot whirlpool"} set to ${channel}.`,
         flags: MessageFlags.Ephemeral,

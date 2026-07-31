@@ -72,13 +72,13 @@ async function deleteDiscordMessage(channel, messageId) {
 }
 
 async function sendSticky(client, sticky) {
-	const database = client.modules.database;
-	const current = await database.getStickyMessage(sticky.guild_id, sticky.id);
+	const db = client.modules.db;
+	const current = await db.getStickyMessage(sticky.guild_id, sticky.id);
 	if (!current) return null;
 	const channel = await fetchChannel(client, current);
 	await deleteDiscordMessage(channel, current.message_id);
 	const message = await channel.send(buildPayload(current));
-	const updated = await database.setStickyDiscordMessage(
+	const updated = await db.setStickyDiscordMessage(
 		current.guild_id,
 		current.id,
 		current.channel_id,
@@ -94,8 +94,8 @@ async function resend(client, sticky) {
 
 async function resendChannel(client, guildId, channelId) {
 	return enqueue(channelId, async () => {
-		const database = client.modules.database;
-		const stickies = await database.getStickyMessages(guildId, channelId);
+		const db = client.modules.db;
+		const stickies = await db.getStickyMessages(guildId, channelId);
 		const channel = stickies.length > 0 ? await fetchChannel(client, stickies[0]) : null;
 		if (!channel) return [];
 
@@ -106,7 +106,7 @@ async function resendChannel(client, guildId, channelId) {
 		const sent = [];
 		for (const sticky of stickies) {
 			const message = await channel.send(buildPayload(sticky));
-			const updated = await database.setStickyDiscordMessage(
+			const updated = await db.setStickyDiscordMessage(
 				guildId,
 				sticky.id,
 				channelId,
@@ -140,7 +140,7 @@ function schedule(client, sticky, delay) {
 
 async function handleMessage(message) {
 	if (!message.guild || (message.author.bot && !message.webhookId)) return;
-	const stickies = await message.client.modules.database.getStickyMessages(
+	const stickies = await message.client.modules.db.getStickyMessages(
 		message.guild.id,
 		message.channel.id,
 	);

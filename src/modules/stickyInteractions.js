@@ -42,8 +42,8 @@ function buildReorderComponents(stickies, channelId) {
 }
 
 async function createSticky(interaction, values) {
-	const database = interaction.client.modules.database;
-	const sticky = await database.createStickyMessage({
+	const db = interaction.client.modules.db;
+	const sticky = await db.createStickyMessage({
 		guild_id: interaction.guildId,
 		channel_id: values.channelId,
 		interval_ms: values.interval,
@@ -59,21 +59,21 @@ async function createSticky(interaction, values) {
 		return await interaction.client.modules.stickyMessages.resend(interaction.client, sticky);
 	}
 	catch (error) {
-		await database.deleteStickyMessage(interaction.guildId, sticky.id);
+		await db.deleteStickyMessage(interaction.guildId, sticky.id);
 		throw error;
 	}
 }
 
 async function updatePayload(interaction, record, payload, update = {}) {
-	const database = interaction.client.modules.database;
-	let updated = await database.updateStickyMessage(interaction.guildId, record.id, {
+	const db = interaction.client.modules.db;
+	let updated = await db.updateStickyMessage(interaction.guildId, record.id, {
 		...update,
 		payload,
 	});
 	if (record.type === 'template') return updated;
-	if (record.sync_with_source) updated = await database.stopStickySync(interaction.guildId, record.id);
+	if (record.sync_with_source) updated = await db.stopStickySync(interaction.guildId, record.id);
 
-	const syncedClones = await database.syncStickyClones(interaction.guildId, record.id, payload);
+	const syncedClones = await db.syncStickyClones(interaction.guildId, record.id, payload);
 	await Promise.all([updated, ...syncedClones].filter(Boolean).map((sticky) =>
 		interaction.client.modules.stickyMessages.resend(interaction.client, sticky),
 	));
@@ -106,7 +106,7 @@ async function handleModal(interaction) {
 	await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 	if (action === 'template') {
-		const template = await interaction.client.modules.database.createStickyTemplate({
+		const template = await interaction.client.modules.db.createStickyTemplate({
 			guild_id: interaction.guildId,
 			payload,
 			created_by: interaction.user.id,
@@ -127,8 +127,8 @@ async function handleModal(interaction) {
 	}
 
 	const id = Number(rawId);
-	const database = interaction.client.modules.database;
-	const oldSticky = await database.getStickyMessage(interaction.guildId, id);
+	const db = interaction.client.modules.db;
+	const oldSticky = await db.getStickyMessage(interaction.guildId, id);
 	if (!oldSticky) {
 		await interaction.editReply('That sticky no longer exists.');
 		return;
@@ -140,7 +140,7 @@ async function handleModal(interaction) {
 	}
 	const targetStickies = oldSticky.channel_id === channelId
 		? []
-		: await database.getStickyMessages(interaction.guildId, channelId);
+		: await db.getStickyMessages(interaction.guildId, channelId);
 	const newOrder = targetStickies.reduce(
 		(maximum, sticky) => Math.max(maximum, sticky.order),
 		0,
@@ -174,13 +174,13 @@ async function handleButton(interaction) {
 	const [, action, channelId, rawId, direction] = interaction.customId.split(':');
 	if (action !== 'move') return;
 	await interaction.deferUpdate();
-	const database = interaction.client.modules.database;
-	const stickies = await database.getStickyMessages(interaction.guildId, channelId);
+	const db = interaction.client.modules.db;
+	const stickies = await db.getStickyMessages(interaction.guildId, channelId);
 	const index = stickies.findIndex((sticky) => sticky.id === Number(rawId));
 	const target = direction === 'up' ? index - 1 : index + 1;
 	if (index >= 0 && target >= 0 && target < stickies.length) {
 		[stickies[index], stickies[target]] = [stickies[target], stickies[index]];
-		await database.reorderStickyMessages(
+		await db.reorderStickyMessages(
 			interaction.guildId,
 			channelId,
 			stickies.map((sticky) => sticky.id),
@@ -191,7 +191,7 @@ async function handleButton(interaction) {
 			channelId,
 		);
 	}
-	const updated = await database.getStickyMessages(interaction.guildId, channelId);
+	const updated = await db.getStickyMessages(interaction.guildId, channelId);
 	await interaction.editReply({ components: buildReorderComponents(updated, channelId) });
 }
 

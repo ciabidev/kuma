@@ -13,7 +13,7 @@ module.exports = {
 
     let settings;
     try {
-      settings = await message.client.modules.database.getGuildSettings(message.guild.id);
+      settings = await message.client.modules.db.getGuildSettings(message.guild.id);
     } catch (error) {
       console.error("Failed to load guild settings:", error);
       return;

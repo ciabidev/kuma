@@ -55,7 +55,7 @@ module.exports = {
       }
       
       // Get previous points or default to 0
-      let prevPoints = await interaction.client.modules.database.getUserPoints(
+      let prevPoints = await interaction.client.modules.db.getUserPoints(
         interaction.guildId,
         targetUser.id
       );

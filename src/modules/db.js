@@ -1,14 +1,14 @@
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const { environment, mongoUri } = require("#config");
 
-const databaseName = environment;
+const dbName = environment;
 
 let client;
 let db;
 let initPromise;
 const settingsCache = new Map();
 
-async function initDatabase() {
+async function initDb() {
   if (!initPromise) {
     client = new MongoClient(mongoUri, {
       serverApi: {
@@ -20,7 +20,7 @@ async function initDatabase() {
 
     initPromise = (async () => {
       await client.connect();
-      db = client.db(databaseName);
+      db = client.db(dbName);
 
       const cases = db.collection("moderation_cases");
       const stickyMessages = db.collection("sticky_messages");
@@ -48,7 +48,7 @@ async function initDatabase() {
 
 function getCollection(collectionName) {
   if (!db) {
-    throw new Error(`Database has not finished initializing before accessing ${collectionName}`);
+    throw new Error(`Db has not finished initializing before accessing ${collectionName}`);
   }
   return db.collection(collectionName);
 }
@@ -166,7 +166,7 @@ async function setGuildJoinRole(guildId, roleId) {
   return settings;
 }
 
-async function pingDatabase() {
+async function pingDb() {
   await db.command({ ping: 1 });
 }
 
@@ -356,7 +356,7 @@ async function reorderStickyMessages(guildId, channelId, orderedIds) {
   })));
 }
 
-async function closeDatabase() {
+async function closeDb() {
   if (initPromise) {
     await client.close();
     client = undefined;
@@ -367,7 +367,7 @@ async function closeDatabase() {
 }
 
 module.exports = {
-  initDatabase,
+  initDb,
   getCollection,
   getUserPoints,
   createCase,
@@ -375,7 +375,7 @@ module.exports = {
   getGuildSettings,
   setGuildChannel,
   setGuildJoinRole,
-  pingDatabase,
+  pingDb,
   createStickyMessage,
   createStickyTemplate,
   getStickyMessage,
@@ -387,5 +387,5 @@ module.exports = {
   setStickyDiscordMessage,
   deleteStickyMessage,
   reorderStickyMessages,
-  closeDatabase,
+  closeDb,
 };

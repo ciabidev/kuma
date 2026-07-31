@@ -249,7 +249,7 @@ async function execute(interaction) {
 	}
 
 	const subcommand = interaction.options.getSubcommand(true);
-	const database = interaction.client.modules.database;
+	const db = interaction.client.modules.db;
 	if (subcommand === 'template') {
 		const messageLink = interaction.options.getString('message_link');
 		if (!messageLink) {
@@ -261,7 +261,7 @@ async function execute(interaction) {
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 		const payload = await payloadFromMessageLink(interaction, messageLink);
-		const template = await database.createStickyTemplate({
+		const template = await db.createStickyTemplate({
 			guild_id: interaction.guildId,
 			payload,
 			created_by: interaction.user.id,
@@ -305,7 +305,7 @@ async function execute(interaction) {
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 		const template = templateId
-			? await database.getStickyMessage(interaction.guildId, Number(templateId))
+			? await db.getStickyMessage(interaction.guildId, Number(templateId))
 			: null;
 		if (templateId && template?.type !== 'template') {
 			await interaction.editReply('That sticky template no longer exists.');
@@ -332,7 +332,7 @@ async function execute(interaction) {
 
 	if (subcommand === 'clone') {
 		const sourceId = Number(interaction.options.getString('sticky', true));
-		const source = await database.getStickyMessage(interaction.guildId, sourceId);
+		const source = await db.getStickyMessage(interaction.guildId, sourceId);
 		if (!source || source.type === 'template') {
 			await interaction.reply({
 				content: 'That sticky no longer exists.',
@@ -384,7 +384,7 @@ async function execute(interaction) {
 
 	if (subcommand === 'edit') {
 		const id = Number(interaction.options.getString('sticky', true));
-		const sticky = await database.getStickyMessage(interaction.guildId, id);
+		const sticky = await db.getStickyMessage(interaction.guildId, id);
 		if (!sticky) {
 			await interaction.reply({ content: 'That sticky no longer exists.', flags: MessageFlags.Ephemeral });
 			return;
@@ -443,7 +443,7 @@ async function execute(interaction) {
 			}
 			const targetStickies = sticky.channel_id === channel.id
 				? []
-				: await database.getStickyMessages(interaction.guildId, channel.id);
+				: await db.getStickyMessages(interaction.guildId, channel.id);
 			const order = sticky.channel_id === channel.id
 				? sticky.order
 				: targetStickies.reduce((maximum, item) => Math.max(maximum, item.order), 0) + 1;
@@ -487,7 +487,7 @@ async function execute(interaction) {
 
 	if (subcommand === 'delete') {
 		const id = Number(interaction.options.getString('sticky', true));
-		const sticky = await database.deleteStickyMessage(interaction.guildId, id);
+		const sticky = await db.deleteStickyMessage(interaction.guildId, id);
 		if (!sticky) {
 			await interaction.reply({ content: 'That sticky no longer exists.', flags: MessageFlags.Ephemeral });
 			return;
@@ -518,7 +518,7 @@ async function execute(interaction) {
 		await interaction.reply({ content: channelError, flags: MessageFlags.Ephemeral });
 		return;
 	}
-	const stickies = await database.getStickyMessages(interaction.guildId, channel.id);
+	const stickies = await db.getStickyMessages(interaction.guildId, channel.id);
 	if (stickies.length < 2) {
 		await interaction.reply({
 			content: `There ${stickies.length === 1 ? 'is only one sticky' : 'are no stickies'} in ${channel}.`,
@@ -536,12 +536,12 @@ async function execute(interaction) {
 }
 
 async function autocomplete(interaction) {
-	const database = interaction.client.modules.database;
+	const db = interaction.client.modules.db;
 	const focused = interaction.options.getFocused(true);
 	const subcommand = interaction.options.getSubcommand(true);
 	const [stickies, templates] = await Promise.all([
-		database.getStickyMessages(interaction.guildId),
-		database.getStickyTemplates(interaction.guildId),
+		db.getStickyMessages(interaction.guildId),
+		db.getStickyTemplates(interaction.guildId),
 	]);
 	const records = focused.name === 'template'
 		? templates

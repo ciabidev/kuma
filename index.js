@@ -95,7 +95,7 @@ for (const file of moduleFiles) {
 }
 
 async function start() {
-  await client.modules.database.initDatabase();
+  await client.modules.db.initDb();
   console.log("[DATABASE] Connected to MongoDB Atlas.");
   await client.login(discordToken);
 }
@@ -103,7 +103,7 @@ async function start() {
 async function shutdown() {
   server.close();
   client.destroy();
-  await client.modules.database.closeDatabase();
+  await client.modules.db.closeDb();
 }
 
 process.once("SIGINT", shutdown);

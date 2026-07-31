@@ -5,7 +5,7 @@ module.exports = {
 	async execute(member) {
 		let settings;
 		try {
-			settings = await member.client.modules.database.getGuildSettings(member.guild.id);
+			settings = await member.client.modules.db.getGuildSettings(member.guild.id);
 		}
 		catch (error) {
 			console.error('Failed to load join-role settings:', error);

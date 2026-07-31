@@ -1,6 +1,6 @@
 const sendModerationDM = require("#modules/sendModerationDM");
 const sendModerationMessage = require("#modules/sendModerationMessage");
-const { createCase } = require("#modules/database");
+const { createCase } = require("#modules/db");
 
 module.exports = async function recordModerationEvent({
   targetUser,
