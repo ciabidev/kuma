@@ -1,96 +1,141 @@
 # kuma
-Discord moderation bot with isolated settings, cases, and point totals for every server.
 
-Its not public rn so you'll have to self host it:
+Kuma is a multi-server Discord moderation bot with isolated settings, moderation cases, and point totals for each server.
 
-# How to self host
+## Self-hosting
 
-## 1. Clone the repo
+Kuma uses Discord's Gateway, so it needs a continuously running Node.js process with outbound WebSocket and MongoDB access. Static hosting and function-only serverless platforms cannot run this application unchanged.
 
-1. Clone the repo
+### Requirements
 
-2. Install the dependencies with `npm install`
-    - make sure you have node installed (latest)
+- [Git](https://git-scm.com/downloads)
+- [Node.js 24 LTS](https://nodejs.org/en/about/previous-releases)
+- A Discord server where you have Manage Server permission
+- A [MongoDB Atlas](https://www.mongodb.com/atlas) cluster or compatible MongoDB deployment
+- An always-on host for production deployments
 
-## 2. Configure environment variables
+### 1. Install Kuma
 
-Copy the variables from `.env.example` into your hosting provider's environment configuration.
+```sh
+git clone https://github.com/ciabidev/kuma.git
+cd kuma
+npm ci
+```
 
-- `ENVIRONMENT`: `development` or `production`; this is also the MongoDB database name.
-- `DISCORD_TOKEN`: the token for the bot used by this deployment.
-- `DEV_IDS`: comma-separated Discord user IDs allowed to run developer-only commands.
-- `MONGO_URI`: your MongoDB Atlas connection string.
-- `ISSUES`: optional URL shown when a command fails so users can report the problem.
+`npm ci` performs a clean install from `package-lock.json`, which makes it preferable to `npm install` for deployments.
 
-### MongoDB Atlas
+### 2. Create and install the Discord bot
 
-1. Create a free Atlas cluster and a database user.
-2. Add your hosting provider's outbound IP to Atlas Network Access. For local development, add your current IP.
-3. In Atlas, select Connect -> Drivers -> Node.js and copy the connection string.
-4. Set `MONGO_URI` to that connection string and replace its username and password placeholders.
-The bot uses the database named by `ENVIRONMENT` and creates its collections and indexes automatically.
+1. Open the [Discord Developer Portal](https://discord.com/developers/applications), create an application, and open its **Bot** page.
+2. Under **Privileged Gateway Intents**, enable **Server Members Intent** and **Message Content Intent**. Kuma requests both intents and Discord will reject the connection if they are disabled.
+3. Under **Token**, reset and copy the bot token. Store it securely; never commit or share it.
+4. Open **Installation** and enable the **Guild Install** context.
+5. Select the **Discord Provided Link**. Under the Guild Install settings, add the `applications.commands` and `bot` scopes.
+6. Grant the permissions required by the features you intend to use:
+   - View Channels, Send Messages, Embed Links, Attach Files, and Read Message History
+   - Manage Messages and Manage Roles
+   - Kick Members, Ban Members, and Moderate Members
+7. Copy the install link and add the bot to your server.
+8. In your server's role settings, move the bot's role above every role and member it needs to manage. Discord does not allow a bot to manage targets above its highest role.
 
-Moderation cases created by an older single-server version do not have a `guild_id` and are intentionally hidden to prevent cross-server data leaks. Add the original server's ID to those documents in Atlas if you want to retain them.
+The application ID is obtained from the logged-in bot session. `CLIENT_ID` and `GUILD_ID` environment variables are not needed. Kuma registers its commands globally when it starts, making them available to every server where the bot is installed.
 
-### discord
-Create a bot in https://discord.com/developers/applications.
-1. On the Bot page, enable the Server Members and Message Content privileged gateway intents.
-2. In the Installation tab, enable the `bot` and `applications.commands` scopes and grant the moderation permissions you intend to use.
-3. go to your discord settings and enable developer mode
+Discord's current setup flow is documented in [Building your first Discord bot](https://docs.discord.com/developers/quick-start/getting-started), with intent details in the [Gateway documentation](https://docs.discord.com/developers/events/gateway).
 
-Set `DISCORD_TOKEN` to the token from the bot's Bot page. The application ID is read from the logged-in bot session, and commands are deployed globally to every server that installs the bot.
+### 3. Configure MongoDB Atlas
 
-### Per-server configuration
+1. Create an Atlas project and cluster.
+2. Create a database user with `readWrite` access to the database selected by ENVIRONMENT. [MongoDB should create a user for you when first starting]. Database users are not the same as website users
+3. Select **Connect** → **Drivers** → **Node.js** and copy the `mongodb+srv://...` connection string. Replace its username and password placeholders with the username and db password created
+4. In **Network Access**, allow the outbound IP address (or CIDR ranges) used by the server hosting Kuma. For local development, add your current public IP.
 
-Members with Manage Server permission can configure channels independently in each server:
+Kuma creates its collections and indexes automatically. Moderation cases from the old single-server schema do not contain `guild_id` and remain hidden to prevent cross-server data leaks. Add the original server ID to those documents if you need to migrate them.
 
-- `/config set-channel purpose:Moderation logs` sends a copy of moderation actions to that channel.
-- `/config set-channel purpose:Spam-bot whirlpool` deletes messages in that channel and bans their authors.
-- `/config clear-channel` disables either feature.
-- `/config view` shows the current server's settings.
+### 4. Configure environment variables
 
-The whirlpool is disabled by default. Only enable it in a dedicated trap channel.
+For local development, copy `.env.example` to `.env`. On a hosting platform, add the same values through its environment or secrets settings.
 
-## 3. Deploying
-- cloudflare and vercel will not work with this, you'll have to use something like Render or Koyeb etc. 
+| Variable | Required | Description |
+| --- | --- | --- |
+| `ENVIRONMENT` | Yes | `development` or `production`; also used as the MongoDB database name. |
+| `DISCORD_TOKEN` | Yes | Bot token from the Discord Developer Portal. Treat it as a secret. |
+| `MONGO_URI` | Yes | MongoDB connection string. Treat it as a secret. |
+| `DEV_IDS` | No | Comma-separated Discord user IDs permitted to run `/reload`. |
+| `ISSUES` | No | Issue tracker URL included in command error responses. |
+| `PORT` | No | HTTP health-check port. Defaults to `3000`; hosting platforms usually provide it. |
 
-### Render
-render is free i found a funny loophole
-Do not have multiple web services under a single workspace or you'll hit usage limit fast
-1. create a new workspace
-2. create a web service and import from your cloned github repo
-3. set build command to `npm install` and start command to `npm start`
-4. scroll to the environment section and add the required variables
-5. deploy
+Enable Developer Mode under Discord **User Settings** → **Advanced**, then use **Copy User ID** to obtain values for `DEV_IDS`.
 
+### 5. Start the bot
 
-### for other services
-Haven't had much experience with others so here's a general guide:
-1. import from github
-2. add the required environment variables
-3. set build command to `npm install` and start command to `npm start`
-4. deploy
-## Development
-Run `npm run dev`. Commands are deployed globally whenever the bot starts.
+```sh
+npm start
+```
 
-# Commands
+For local development with automatic restarts:
 
-## Moderation
+```sh
+npm run dev
+```
 
-- cases
-- kick
-- removepoints
-- removetimeout
-- punish
-- unban
+Successful startup logs show the MongoDB connection, Discord login, and global command deployment. The health endpoint is available at `http://localhost:3000/` unless `PORT` is set.
 
-## Utility
+## Deploying on Render
 
-- purge
+1. Push your configured fork to GitHub. Do not commit `.env`.
+2. In Render, create a **Web Service** from the repository and select the Node runtime.
+3. Set the build command to `npm ci --omit=dev`.
+4. Set the start command to `npm start`.
+5. Add `ENVIRONMENT`, `DISCORD_TOKEN`, `MONGO_URI`, `DEV_IDS`, and optionally `ISSUES` under **Environment**. Render supplies `PORT` automatically.
+6. Set the HTTP health-check path to `/`.
+7. In the service's **Connect** → **Outbound** tab, copy its outbound CIDR ranges and add them to the Atlas IP access list.
+8. Deploy and check the logs for the successful database, Discord, and command-deployment messages.
 
-## System
+Render web services support the long-running process and health endpoint Kuma needs. Render's [free web services](https://render.com/docs/free) spin down after 15 minutes without inbound traffic and are not reliable for an always-online Discord bot; use an always-on instance for production. See Render's documentation for [web services](https://render.com/docs/web-services), [health checks](https://render.com/docs/health-checks), and [outbound IP ranges](https://render.com/docs/outbound-ip-addresses).
 
-- ping
-- reload
+## Other hosting providers
 
+Use a service that supports a persistent Node.js process and outbound WebSocket and TCP connections. Configure it with:
 
+- Node.js 24
+- Build command: `npm ci --omit=dev`
+- Start command: `npm start`
+- The environment variables listed above
+- A public HTTP port using the host-provided `PORT`
+- An Atlas IP access-list entry for the host's outbound address
+
+Run one Kuma process unless you deliberately add Discord sharding or coordination between replicas.
+
+## Per-server configuration
+
+Members with Manage Server permission can configure each server independently:
+
+- `/config set-channel purpose:Moderation logs` sets the moderation-log channel.
+- `/config set-channel purpose:Spam-bot whirlpool` sets a trap channel that deletes messages and bans their authors.
+- `/config clear-channel` disables either configured channel.
+- `/config view` displays the current settings.
+
+The whirlpool is disabled by default. Enable it only in a dedicated trap channel.
+
+## Commands
+
+- `/moderation cases`
+- `/moderation kick`
+- `/moderation removepoints`
+- `/moderation removetimeout`
+- `/moderation punish`
+- `/moderation unban`
+- `/config`
+- `/purge`
+- `/role`
+- `/sticky`
+- `/ping`
+- `/reload` — restricted to users listed in `DEV_IDS`
+
+## Troubleshooting
+
+- **Discord reports disallowed intents:** enable Server Members Intent and Message Content Intent on the application's Bot page.
+- **MongoDB times out or rejects the connection:** verify `MONGO_URI`, the database user, and the IP access list. For Render, allow every CIDR shown under the service's outbound addresses.
+- **Moderation or role actions fail:** verify the bot's permissions, channel overrides, and role position.
+- **Slash commands are missing:** confirm the app was installed with `applications.commands` and `bot`, then restart Kuma and check the global-deployment log.
+- **The bot goes offline on Render Free:** the service has likely spun down; move it to an always-on instance.

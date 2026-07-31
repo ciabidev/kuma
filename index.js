@@ -18,7 +18,7 @@ const server = app.listen(process.env.PORT || 3000, () => {
 // Require the necessary discord.js classes
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const { Client, Collection, GatewayIntentBits, SlashCommandSubcommandBuilder } = require('discord.js');
 
 require('dotenv').config();
 
@@ -45,6 +45,7 @@ for (const folder of commandFolders) {
 	for (const file of commandFiles) {
     const commandImport = `#commands/${folder}/${file.slice(0, -3)}`;
     const command = require(commandImport);
+    if (command.data instanceof SlashCommandSubcommandBuilder) continue;
     command.__import = commandImport; // this is needed for reloading commands
     // Set a new item in the Collection with the key as the command name and the value as the exported module
     if ("data" in command && "execute" in command) {
