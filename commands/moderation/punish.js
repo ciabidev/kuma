@@ -44,7 +44,7 @@ module.exports = {
    
 
       // Get previous points or default to 0
-      let prevPoints = await interaction.client.modules.getUserPoints(interaction.guild.id, targetUser.id);
+      let prevPoints = await interaction.client.modules.db.getUserPoints(interaction.guild.id, targetUser.id);
 
       // Add new points to the user's total
       const addPoints = interaction.options.getInteger("add");
