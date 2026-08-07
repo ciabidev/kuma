@@ -1,6 +1,9 @@
 const {
+	LabelBuilder,
 	MessageFlags,
+	ModalBuilder,
 	PermissionFlagsBits,
+	RoleSelectMenuBuilder,
 	SlashCommandBuilder,
 } = require('discord.js');
 
@@ -110,17 +113,11 @@ module.exports = {
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName('joinrole')
-				.setDescription('Set or remove the role given to new members')
-				.addRoleOption((option) =>
-					option
-						.setName('role')
-						.setDescription('The role to give new members')
-						.setRequired(false),
-				)
+				.setDescription('Set or remove the roles given to new members')
 				.addBooleanOption((option) =>
 					option
 						.setName('remove')
-						.setDescription('Remove the configured join role')
+						.setDescription('Remove the configured join roles')
 						.setRequired(false),
 				),
 		)
@@ -172,35 +169,42 @@ module.exports = {
 
 		if (subcommand === 'joinrole') {
 			const remove = interaction.options.getBoolean('remove') ?? false;
+			const db = interaction.client.modules.db;
 			if (remove) {
-				await interaction.client.modules.db.setGuildJoinRole(interaction.guildId, null);
+				await db.setGuildJoinRoles(interaction.guildId, []);
 				await interaction.reply({
-					content: 'The join role has been removed.',
+					content: 'The join roles have been removed.',
 					flags: MessageFlags.Ephemeral,
 				});
 				return;
 			}
 
-			const role = interaction.options.getRole('role');
-			if (!role) {
-				await interaction.reply({
-					content: 'Choose a role, or set `remove` to true.',
-					flags: MessageFlags.Ephemeral,
-				});
-				return;
+			const settings = await db.getGuildSettings(interaction.guildId);
+			const defaultRoleIds = (Array.isArray(settings.join_role_ids)
+				? settings.join_role_ids
+				: settings.join_role_id ? [settings.join_role_id] : [])
+				.filter(Boolean)
+				.map(String)
+				.filter((roleId) => interaction.guild.roles.cache.has(roleId));
+			const roleSelect = new RoleSelectMenuBuilder()
+				.setCustomId('joinroles')
+				.setPlaceholder('Select roles for new members')
+				.setMinValues(1)
+				.setMaxValues(25);
+			if (defaultRoleIds.length > 0) {
+				roleSelect.setDefaultRoles(...defaultRoleIds.slice(0, 25));
 			}
-
-			const roleError = getRoleError(interaction, role);
-			if (roleError) {
-				await interaction.reply({ content: roleError, flags: MessageFlags.Ephemeral });
-				return;
-			}
-
-			await interaction.client.modules.db.setGuildJoinRole(interaction.guildId, role.id);
-			await interaction.reply({
-				content: `New members will receive ${role}.`,
-				flags: MessageFlags.Ephemeral,
-			});
+			await interaction.showModal(
+				new ModalBuilder()
+					.setCustomId('role:joinroles')
+					.setTitle('Configure join roles')
+					.addLabelComponents(
+						new LabelBuilder()
+							.setLabel('Join roles')
+							.setDescription('Select every role new members should receive.')
+							.setRoleSelectMenuComponent(roleSelect),
+					),
+			);
 			return;
 		}
 

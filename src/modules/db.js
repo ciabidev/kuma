@@ -150,19 +150,23 @@ async function setGuildChannel(guildId, setting, channelId) {
   return settings;
 }
 
-async function setGuildJoinRole(guildId, roleId) {
-  const key = String(guildId);
+async function setGuildJoinRoles(guildId, roleIds) {
   const guildSettings = db.collection("guild_settings");
-  const update = roleId
-    ? { $set: { join_role_id: String(roleId) } }
-    : { $unset: { join_role_id: "" } };
+  const normalizedRoleIds = [...new Set(
+    (Array.isArray(roleIds) ? roleIds : [roleIds])
+      .filter(Boolean)
+      .map(String),
+  )];
 
   const settings = await guildSettings.findOneAndUpdate(
-    { _id: key },
-    update,
+    { _id: String(guildId) },
+    {
+      $set: { join_role_ids: normalizedRoleIds },
+      $unset: { join_role_id: "" },
+    },
     { upsert: true, returnDocument: "after" }
   );
-  settingsCache.set(key, settings);
+  settingsCache.set(String(guildId), settings);
   return settings;
 }
 
@@ -374,7 +378,7 @@ module.exports = {
   getCases,
   getGuildSettings,
   setGuildChannel,
-  setGuildJoinRole,
+  setGuildJoinRoles,
   pingDb,
   createStickyMessage,
   createStickyTemplate,

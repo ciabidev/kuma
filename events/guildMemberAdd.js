@@ -12,21 +12,29 @@ module.exports = {
 			return;
 		}
 
-		if (!settings.join_role_id) {
+		const configuredRoleIds = Array.isArray(settings.join_role_ids)
+			? [...new Set(settings.join_role_ids.filter(Boolean).map(String))]
+			: settings.join_role_id ? [String(settings.join_role_id)] : [];
+		if (configuredRoleIds.length === 0) {
 			return;
 		}
 
-		const role = member.guild.roles.cache.get(settings.join_role_id);
-		if (!role || !role.editable) {
-			console.error(`Cannot assign join role ${settings.join_role_id} in guild ${member.guild.id}.`);
+		const roles = configuredRoleIds
+			.map((roleId) => member.guild.roles.cache.get(roleId))
+			.filter(Boolean);
+		const assignableRoles = roles.filter((role) => role.editable);
+		if (roles.length !== configuredRoleIds.length || assignableRoles.length !== roles.length) {
+			console.error(`Cannot assign one or more configured join roles in guild ${member.guild.id}.`);
+		}
+		if (assignableRoles.length === 0) {
 			return;
 		}
 
 		try {
-			await member.roles.add(role, 'Configured join role');
+			await member.roles.add(assignableRoles, 'Configured join roles');
 		}
 		catch (error) {
-			console.error(`Failed to assign join role in guild ${member.guild.id}:`, error);
+			console.error(`Failed to assign join roles in guild ${member.guild.id}:`, error);
 		}
 	},
 };
